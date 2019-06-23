@@ -1,0 +1,32 @@
+<?xml version="1.0" ?>
+<InviwoWorkspace version="2">
+    <maskMin content="0" />
+    <maskMax content="1" />
+    <type content="0" />
+    <Points>
+        <Point>
+            <pos content="0.100428283214569091796875" />
+            <rgba x="-1.0948242" y="-1.2298554" z="-1.1533432" w="0" />
+        </Point>
+        <Point>
+            <pos content="0.2447979748249053955078125" />
+            <rgba x="0.65490198" y="0.65490198" z="0.65490198" w="0.059822395" />
+        </Point>
+        <Point>
+            <pos content="0.454667568206787109375" />
+            <rgba x="0.29201192" y="0.58141452" z="0.73725492" w="0.033472531" />
+        </Point>
+        <Point>
+            <pos content="0.54351770877838134765625" />
+            <rgba x="1" y="0.91961545" z="0.88235295" w="0.058183797" />
+        </Point>
+        <Point>
+            <pos content="0.929428160190582275390625" />
+            <rgba x="0.9254902" y="0.5882048" z="0.43189135" w="0.69192857" />
+        </Point>
+        <Point>
+            <pos content="0.3363095223903656005859375" />
+            <rgba x="0.48831594" y="0.6211673" z="0.69270641" w="0" />
+        </Point>
+    </Points>
+</InviwoWorkspace>
