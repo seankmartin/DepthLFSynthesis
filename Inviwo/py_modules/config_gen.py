@@ -36,6 +36,8 @@ def choose_cfg(choice):
         return setup_looking_cfg()
     elif choice == "default":
         return setup_default_cfg()
+    elif choice == "generic":
+        return setup_generic_cfg()
     else:
         print("Choice not found for cfg, using default")
         return setup_default_cfg() 
@@ -108,6 +110,31 @@ def setup_looking_cfg():
         "looking_size": [0.08, 0.42],
         "looking_cone": 40,
         "looking_vert_angle": 0
+    }
+    config["save_main_dir"] = os.path.join(
+        home, 'lf_datasets', 'test_sets')
+
+    return config
+
+def setup_generic_cfg():
+    home = os.path.expanduser('~')
+
+    config = {
+        "constant_seed": True,
+        "should_resize": False,
+        "plane": True,
+        "clip": False,
+        "set_types": {"train", "val"},
+        "num_samples": {'train': 1000, 'val': 400},
+        "hdf5_name": "test_new.h5",
+        "look_up": [0, 1, 0],
+        "pixel_dim_x": 512,
+        "pixel_dim_y": 512,
+        "max_look_from": 1.0,
+        "min_look_from": 0.35,
+        "spatial_rows": 8,
+        "spatial_cols": 8,
+        "random_light": False
     }
     config["save_main_dir"] = os.path.join(
         home, 'lf_datasets', 'test_sets')

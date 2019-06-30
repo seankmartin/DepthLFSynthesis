@@ -23,8 +23,65 @@ from config_gen import choose_cfg
 import welford
 import ivw_helpers
 
+def get_volume(network, config):
+    if config["should_use_numpy_vol"]:
+            ivw_volume = network.NumpyVolumeLoader
+            if ivw_volume == None:
+                print("Attempting to use Python Script Proccessor as id")
+                print("Recommended as Numpy Volume Loader")
+                ivw_volume = network.PythonScriptProcessor
+                if ivw_volume == None:
+                    print(
+                    "Please change the identifier of the volume loader to:",
+                    "Numpy Volume Loader",
+                    "Or add a python script processor to the network")
+                    exit(-1)
+    else:
+        ivw_volume = network.VolumeSource
+    return ivw_volume
+
+def create_hdf_storage(hdf5_file, config):
+    pixel_dim_x = config["pixel_dim_x"]
+    pixel_dim_y = config["pixel_dim_y"]
+    spatial_rows = config["spatial_rows"]
+    spatial_cols = config["spatial_cols"]
+    cam = inviwopy.app.network.MeshClipping.camera
+
+    for set_type in config["set_types"]:    
+        num_samples = config["num_samples"][set_type]
+
+        # Setup the hdf5
+        colour = hdf5_file.create_group(set_type)
+        colour.attrs['lf_shape'] = [
+            num_samples, spatial_cols * spatial_rows,
+            4, pixel_dim_y, pixel_dim_x]
+        colour.attrs['focal_length'] = cam.projectionMatrix[0][0]
+        colour.attrs['near_plane'] = cam.nearPlane
+        colour.attrs['far_plane'] = cam.farPlane
+        mean_shape = [num_samples, 4, pixel_dim_y, pixel_dim_x]
+        time_shape = [num_samples]
+        cam_shape = [num_samples, 9]
+        colour.create_dataset('images', colour.attrs['lf_shape'], np.uint8,
+                                chunks = (1, 1, 4, pixel_dim_y, pixel_dim_x),
+                                compression = "lzf",
+                                shuffle = True)
+        colour.create_dataset('warped', colour.attrs['lf_shape'], np.uint8,
+                                chunks = (1, 1, 4, pixel_dim_y, pixel_dim_x),
+                                compression = "lzf",
+                                shuffle = True)
+        colour.create_dataset('mean', mean_shape, np.float32,
+                                chunks = (1, 4, pixel_dim_y, pixel_dim_x),
+                                compression = "lzf",
+                                shuffle = True)
+        colour.create_dataset('var', mean_shape, np.float32,
+                                chunks = (1, 4, pixel_dim_y, pixel_dim_x),
+                                compression = "lzf",
+                                shuffle = True)
+        colour.create_dataset('timing', time_shape, np.float32)
+        colour.create_dataset('camera_extrinsics', cam_shape, np.float32)
+
 def save_looking_to_hdf5_group(
-    sample_index, h5_canvas_list, swizzle_canvas, camera, config):
+    sample_index, h5_canvas_list, camera, config):
         """Saves lf information to hdf5 group with images over columns then rows
         
         Keyword arguments:
@@ -47,16 +104,17 @@ def save_looking_to_hdf5_group(
         cam.lookFrom = camera[0]
         cam.lookTo = camera[1]
         cam.lookUp = camera[2]
-        set_light_position(inviwopy.app.network)
-        link_config_to_looking(inviwopy.app.network, config)
         inviwo_utils.update()
         time_taken = time() - start_time
+        sleep(1)
 
         for i, group_tuple in enumerate(h5_canvas_list):
-            #assuming that there is one canvas
+            #assuming that there is two canvases
             group = group_tuple[0]
             canvas = ivw_helpers.get_canvas_by_id(
                 inviwopy.app.network, group_tuple[1])
+            w_canvas = ivw_helpers.get_canvas_by_id(
+                inviwopy.app.network, group_tuple[2])
             assert (canvas.inputSize.customInputDimensions.value[0] // config["spatial_cols"] == 
                     group.attrs["lf_shape"][-1]), \
                     "canvas size x {} is not pixel dimension {} of h5".format(
@@ -76,19 +134,12 @@ def save_looking_to_hdf5_group(
             cam.lookTo.x, cam.lookTo.y, cam.lookTo.z,
             cam.lookUp.x, cam.lookUp.y, cam.lookUp.z]
 
-            ivw_swizz_canvas = ivw_helpers.get_canvas_by_id(
-                inviwopy.app.network, swizzle_canvas)
-            swizzle_data = ivw_helpers.get_image(ivw_swizz_canvas)
-            swizzle_data = np.flipud(np.swapaxes(swizzle_data, 0, 2))
-            swizzle_data = swizzle_data[::-1, ::-1, ...]
-            group['swizzles'][sample_index] = swizzle_data
-
             # Inviwo stores data in a different indexing to regular
             # Store as descending y: C, H, W
-            for idx in range(45):
-                y_start = config["pixel_dim_y"] * (idx // 5)
+            for idx in range(64):
+                y_start = config["pixel_dim_y"] * (idx // 8)
                 y_end = y_start + (config["pixel_dim_y"])
-                x_start = config["pixel_dim_x"] * (idx % 5)
+                x_start = config["pixel_dim_x"] * (idx % 8)
                 x_end = x_start + (config["pixel_dim_x"])
                 
                 im_data = total_im_data[x_start:x_end, y_start:y_end]
@@ -98,7 +149,21 @@ def save_looking_to_hdf5_group(
                 group['timing'][sample_index] = time_taken
                 accumulator_list[i] = welford.update(
                     accumulator_list[i], np.asarray(im_data, dtype=np.float32))
-        
+
+            total_im_data = ivw_helpers.get_image(w_canvas)
+            # Inviwo stores data in a different indexing to regular
+            # Store as descending y: C, H, W
+            for idx in range(64):
+                y_start = config["pixel_dim_y"] * (idx // 8)
+                y_end = y_start + (config["pixel_dim_y"])
+                x_start = config["pixel_dim_x"] * (idx % 8)
+                x_end = x_start + (config["pixel_dim_x"])
+                
+                im_data = total_im_data[x_start:x_end, y_start:y_end]
+                im_data = np.flipud(np.swapaxes(im_data, 0, 2))
+                im_data = im_data[::-1, ::-1, ...]
+                group['warped'][sample_index, idx] = im_data
+
         for i, group_tuple in enumerate(h5_canvas_list):
             group = group_tuple[0]
             mean, var, _ = welford.finalize(accumulator_list[i])
@@ -107,74 +172,12 @@ def save_looking_to_hdf5_group(
 
         print("Finished writing LF {0} in {1:.2f}".format(
             sample_index, time() - overall_start_time))
-
-def create_hdf_storage(hdf5_file, config):
-    pixel_dim_x = config["pixel_dim_x"]
-    pixel_dim_y = config["pixel_dim_y"]
-    spatial_rows = config["spatial_rows"]
-    spatial_cols = config["spatial_cols"]
-    for set_type in 'train', 'val':
-        cam = inviwopy.app.network.MeshClipping.camera
-        num_samples = config["num_samples"][set_type]
-
-        # Setup the hdf5
-        colour = hdf5_file.create_group(set_type)
-        colour.attrs['lf_shape'] = [
-            num_samples, spatial_cols * spatial_rows,
-            4, pixel_dim_y, pixel_dim_x]
-        colour.attrs['swizz_shape'] = [
-            num_samples, 4, 1600, 2560]
-        colour.attrs['focal_length'] = cam.projectionMatrix[0][0]
-        colour.attrs['near_plane'] = cam.nearPlane
-        colour.attrs['far_plane'] = cam.farPlane
-        mean_shape = [num_samples, 4, pixel_dim_y, pixel_dim_x]
-        time_shape = [num_samples]
-        cam_shape = [num_samples, 9]
-        colour.create_dataset('images', colour.attrs['lf_shape'], np.uint8,
-                                chunks = (1, 1, 4, pixel_dim_y, pixel_dim_x),
-                                compression = "lzf",
-                                shuffle = True)
-        colour.create_dataset('mean', mean_shape, np.float32,
-                                chunks = (1, 4, pixel_dim_y, pixel_dim_x),
-                                compression = "lzf",
-                                shuffle = True)
-        colour.create_dataset('var', mean_shape, np.float32,
-                                chunks = (1, 4, pixel_dim_y, pixel_dim_x),
-                                compression = "lzf",
-                                shuffle = True)
-        colour.create_dataset('timing', time_shape, np.float32)
-        colour.create_dataset('camera_extrinsics', cam_shape, np.float32)
-        colour.create_dataset('swizzles', colour.attrs['swizz_shape'], np.uint8)
-
-def link_config_to_looking(network, config):
-    cam = inviwopy.app.network.MeshClipping.camera
-    lg_props = network.LookingGlassEntryExitPoints.properties
-
-    norm = length(cam.lookFrom)
-    min_look = config["min_look_from"]
-    max_look = config["max_look_from"]
-    min_size = config["looking_size"][0]
-    max_size = config["looking_size"][1]
-    scale = (norm - min_look) / (max_look - min_look)
-    size = min_size + scale * (max_size - min_size)
-
-    lg_props.size.value = size
-    lg_props.view_cone.value = config["looking_cone"]
-    lg_props.vertical_angle.value = config["looking_vert_angle"]
+        sleep(1)
 
 
 def random_float():
     """returns a random float between -1 and 1"""
     return (random() - 0.5) * 2
-# TODO allow modification to the position value
-def set_light_position(network):
-    random_float = lambda : (random() - 0.5) * 2
-    point = network.Pointlightsource
-    light = point.properties.lightPosition
-    light.referenceFrame.value = 1
-    pos = light.position
-    pos.value = vec3(random_float(), random_float(), 5)
-    light.referenceFrame.value = 0
 
 def capture_lf_samples(hdf5_file, set_type, config, network, count):
     random_cams = []
@@ -183,7 +186,8 @@ def capture_lf_samples(hdf5_file, set_type, config, network, count):
         random_cam = create_random_camera(
                         radii,
                         max_look_to_origin=0,
-                        look_up=config["look_up"])
+                        look_up=config["look_up"],
+                        random_look_up=True)
         random_cams.append(random_cam)
 
     colour = hdf5_file[set_type]
@@ -194,8 +198,7 @@ def capture_lf_samples(hdf5_file, set_type, config, network, count):
             random_plane_clip_cam(network, camera)
         save_looking_to_hdf5_group(
             sample_index=count[set_type],
-            h5_canvas_list=[(colour, "Images")],
-            swizzle_canvas="Swizzle", 
+            h5_canvas_list=[(colour, "LF", "Warp")],
             camera=camera, config=config)
         count[set_type] += 1
         if config["clip"]:
@@ -231,7 +234,7 @@ def main(config):
     print("Finished writing to HDF5 in {}".format(hdf5_path))
 
 if __name__ == '__main__':
-    config = choose_cfg("looking")
+    config = choose_cfg("generic")
     lu = config['look_up']
     config['look_up'] = vec3(lu[0], lu[1], lu[2])
     if config["constant_seed"]:

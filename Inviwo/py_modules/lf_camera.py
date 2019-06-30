@@ -163,6 +163,19 @@ class LightFieldCamera:
         cam.lookUp = prev_cam_look_up
         return time_taken
 
+    def move_to_centre(self, cam=inviwopy.app.network.MeshClipping.camera):
+        cam_ar = self.calculate_camera_array()
+        central = (
+            (self.spatial_rows // 2) +
+            self.spatial_rows * (
+                self.spatial_cols // 2)
+            )
+        (look_from, look_to) = cam_ar[central]
+        cam.lookFrom = look_from
+        cam.lookTo = look_to
+        cam.lookUp = self.look_up
+        inviwo_utils.update()
+
     def save_to_hdf5_group(self, sample_index, h5_canvas_list, config):
         """Saves lf information to hdf5 group with images over columns then rows
         

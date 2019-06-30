@@ -1,5 +1,6 @@
 import inviwopy
 from inviwopy.glm import vec3
+import ivw.utils as inviwo_utils
 
 import random
 import time
@@ -23,11 +24,14 @@ def random_vec3(mult = 1.0):
     return vec3(random_f() * mult, random_f() * mult, random_f() * mult)
 
 def time_one():
-    cam = inviwopy.app.network.ClippingRenderProcessor.camera
+    mc = inviwopy.app.network.MeshClipping
+    cam = mc.camera
     start_time = time.time()
-    cam.setLook(random_vec3(20), random_vec3(), random_vec3())
+    cam.setLook(random_vec3(), random_vec3(0), random_vec3())
+    mc.alignPlaneNormalToCameraNormal.press()
+    inviwo_utils.update()
     end_time = time.time() - start_time
-    print("Rendering complete in {:4f}".format(end_time))
+    #print("Rendering complete in {:4f}".format(end_time))
     return end_time
 
 def main(num_samples):
@@ -41,5 +45,5 @@ def main(num_samples):
         print("Overall time mean: {:4f}, stdev: {:4f}".format(mean_time, std_dev_time))
 
 if __name__ == '__main__':
-    NUM_SAMPLES = 10
+    NUM_SAMPLES = 300
     main(NUM_SAMPLES)
