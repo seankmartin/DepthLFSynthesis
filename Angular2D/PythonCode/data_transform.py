@@ -40,6 +40,8 @@ def normalise_sample(sample):
     maximum = 255.0
     lf = sample['colour']
     lf.div_(maximum)
+    lf = sample['warped']
+    lf.div_(maximum)
     return sample
 
 
@@ -66,6 +68,13 @@ def crop(sample, crop_cords):
                                         crop_cords[0]:crop_cords[2],
                                         crop_cords[1]:crop_cords[3]]
     return sample
+
+
+def angular_remap(sample):
+    shape = sample['colour'].shape
+    inputs = create_remap(sample['colour'], dtype=torch.float32)
+    targets = create_remap(sample['warped'], dtype=torch.float32)
+    return {'inputs': inputs, 'targets': targets, 'shape': shape}
 
 
 def get_random_crop(sample, patch_size):

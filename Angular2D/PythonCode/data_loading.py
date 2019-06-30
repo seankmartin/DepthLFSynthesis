@@ -136,10 +136,12 @@ def create_dataloaders(args, config):
     train_set = TrainFromHdf5(
         file_path=file_path,
         patch_size=int(config['NETWORK']['patch_size']),
-        num_crops=int(config['NETWORK']['num_crops']))
+        num_crops=int(config['NETWORK']['num_crops']),
+        transform=angular_remap)
     val_set = ValFromHdf5(
         file_path=file_path,
-        patch_size=int(config["NETWORK"]["val_patch_size"]))
+        patch_size=int(config["NETWORK"]["val_patch_size"]),
+        transform=angular_remap)
 
     batch_size = {'train': int(config['NETWORK']['batch_size']), 'val': 1}
     data_loaders = {}
