@@ -124,10 +124,10 @@ def create_dataloaders(args, config):
         file_path=file_path,
         patch_size=int(config['NETWORK']['patch_size']),
         num_crops=int(config['NETWORK']['num_crops']),
-        transform=None)
+        transform=data_transform.transform_to_warped)
     val_set = ValFromHdf5(
         file_path=file_path,
-        transform=None)
+        transform=data_transform.transform_to_warped)
 
     batch_size = {'train': int(config['NETWORK']['batch_size']), 'val': 1}
     data_loaders = {}

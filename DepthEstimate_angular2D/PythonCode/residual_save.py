@@ -82,6 +82,7 @@ def main(args, config, sample_index):
             im_input = im_input.cuda()
 
         output = model(im_input)
+        residual = output.clone()
         output += im_input
         output = torch.clamp(output, 0.0, 1.0)
 
@@ -99,6 +100,9 @@ def main(args, config, sample_index):
             os.mkdir(cnn_dir)
             os.mkdir(no_cnn_dir)
 
+        residual = torch.squeeze(residual.add_(1.0).mul_(255.0))
+        residual = data_transform.undo_remap(residual, desired_shape, dtype=torch.float32)
+        residual_out = np.around(residual.cpu().detach().numpy()).astype(np.uint8)
         output = torch.squeeze(denormalise_lf(output))
         output = data_transform.undo_remap(output, desired_shape, dtype=torch.float32)
         cpu_output = np.around(output.cpu().detach().numpy()).astype(np.uint8)
@@ -117,6 +121,11 @@ def main(args, config, sample_index):
                 print("Saving images of size ", cpu_output[i].shape)
             image_warping.save_array_as_image(
                 cpu_output[i], save_location)
+
+            file_name = 'Residual{}{}.png'.format(row, col)
+            save_location = os.path.join(cnn_dir, file_name)
+            image_warping.save_array_as_image(
+                residual_out[i], save_location)
             
             if args.get_diff:
                 colour = ground_truth[i]
@@ -137,11 +146,6 @@ def main(args, config, sample_index):
                 ssim = evaluate.ssim(
                     cpu_output[i], 
                     img)
-                
-                if args.verbose:
-                     print("Position ({}, {}): PSNR {:4f}, SSIM {:4f}".format(
-                        row, col, psnr, ssim))
-
                 psnr_accumulator = welford.update(psnr_accumulator, psnr)
                 ssim_accumulator = welford.update(ssim_accumulator, ssim)
 
@@ -179,6 +183,11 @@ def main(args, config, sample_index):
                     save_location = os.path.join(no_cnn_dir, file_name)
                     image_warping.save_array_as_image(diff, save_location)
 
+                    file_name = 'cnn_Diff{}{}.png'.format(row, col)
+                    diff = image_warping.get_diff_image(cpu_input[i], cpu_output[i])
+                    save_location = os.path.join(no_cnn_dir, file_name)
+                    image_warping.save_array_as_image(diff, save_location)
+
                 if not args.no_eval:
                     img = ground_truth[i]
                     psnr = evaluate.my_psnr(
@@ -187,11 +196,6 @@ def main(args, config, sample_index):
                     ssim = evaluate.ssim(
                         cpu_input[i], 
                         img)
-                
-                    if args.verbose:               
-                        print("Position ({}, {}): PSNR {:4f}, SSIM {:4f}".format(
-                            row, col, psnr, ssim))
-
                     psnr_accumulator = welford.update(psnr_accumulator, psnr)
                     ssim_accumulator = welford.update(ssim_accumulator, ssim)
 
@@ -237,8 +241,6 @@ if __name__ == '__main__':
                         help='which light field sample to use, default 0')
     PARSER.add_argument('--get_diff', action='store_true',
                         help="Should get difference images")
-    PARSER.add_argument('--verbose', '--v', action='store_true',
-                        help="Should print eval for all positions")
     PARSER.add_argument('--first', "--f", default=True, type=bool,
                         help="Load the first layer pretrained - default True")
     #Any unknown argument will go to unparsed

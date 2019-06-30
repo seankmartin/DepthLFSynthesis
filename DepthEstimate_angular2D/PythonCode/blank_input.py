@@ -61,14 +61,15 @@ def main(args, config, sample_index):
     with h5py.File(file_path, mode='r', libver='latest') as hdf5_file:
         depth_grp = hdf5_file['val']['disparity']
         SNUM = sample_index
-        depth_images = torch.squeeze(torch.tensor(
-            depth_grp['images'][SNUM],
+        depth_images = torch.squeeze(torch.zeros(
+            depth_grp['images'][SNUM].shape,
             dtype=torch.float32))
 
         colour_grp = hdf5_file['val']['colour']
-        colour_images = torch.tensor(
-            colour_grp['images'][SNUM],
-            dtype=torch.float32)
+        colour_images = torch.tensor(np.full(
+            colour_grp['images'][SNUM].shape,
+            255.0,
+            dtype=np.float32), dtype=torch.float32)
 
         sample = {'depth': depth_images,
                   'colour': colour_images,

@@ -17,11 +17,9 @@ from tensorboardX import SummaryWriter
 from torch.optim.lr_scheduler import CosineAnnealingLR
 
 import cnn_utils
-from full_model import setup_model, setup_depth_model
-from depth_model import DepthModel
+from full_model import setup_model
 from data_loading import create_dataloaders
 import helpers
-import data_transform
 from data_transform import undo_remap
 
 CONTINUE_MESSAGE = "==> Would you like to continue training?"
@@ -39,11 +37,8 @@ def main(args, config, writer):
     data_loaders = create_dataloaders(args, config)
 
     model, criterion, optimizer, lr_scheduler = setup_model(args)
-    depth_model, depth_criterion, depth_optim, depth_schedule = setup_depth_model(args)
-
     if cuda: # GPU support
         model = model.cuda()
-        depth_model = depth_model.cuda()
         #The below is only needed if loss fn has params
         #criterion = criterion.cuda()
 
@@ -58,10 +53,7 @@ def main(args, config, writer):
     print("Beginning training loop")
     for epoch in range(args.start_epoch, args.start_epoch + args.nEpochs):
         epoch_loss = train(
-            model=model, depth_model=depth_model, 
-            depth_optim=depth_optim, depth_criterion=depth_criterion,
-            depth_schedule=depth_schedule,
-            dset_loaders=data_loaders,
+            model=model, dset_loaders=data_loaders,
             optimizer=optimizer, lr_scheduler=lr_scheduler,
             criterion=criterion, epoch=epoch,
             cuda=cuda, clip=args.clip, writer=writer)
@@ -118,16 +110,13 @@ def main(args, config, writer):
         os.path.join(scalar_dir, "all_scalars.json"))
     writer.close()
 
-def train(model, depth_model, depth_optim, depth_criterion,
-          depth_schedule,
-          dset_loaders, optimizer, lr_scheduler,
+def train(model, dset_loaders, optimizer, lr_scheduler,
           criterion, epoch, cuda, clip, writer):
     """
     Trains model using data_loader with the given
     optimizer, lr_scheduler, criterion and epoch
     """
     lr_scheduler.step()
-    depth_schedule.step()
     # Each epoch has a training and validation phase
     for phase in ['train', 'val']:
         since = time.time()
@@ -135,53 +124,13 @@ def train(model, depth_model, depth_optim, depth_criterion,
             model.train() # Set model to training mode
         else:
             model.eval() # Set model to evaluate mode
-        
-        d_running_loss = 0.0
+
         running_loss = 0.0
         for iteration, batch in enumerate(dset_loaders[phase]):
             # Use this if doing cyclic learning
             # lr_scheduler.batch_step()
-            sample_index = 8 * 4 + 4
-            d_targets = batch['depth']
-            d_inputs = d_targets[:, sample_index].unsqueeze_(1)
-            d_inputs.requires_grad_()
-            d_targets.requires_grad_(False)
-
-            if cuda:
-                d_inputs = d_inputs.cuda()
-                d_targets = d_targets.cuda()
-
-            depth_out = depth_model(d_inputs)
-            loss = depth_criterion(depth_out, d_targets)
-            depth_optim.zero_grad()
-
-            d_running_loss += loss.item()
-
-            if iteration % 100 == 0:
-                print("===> Epoch[{}]({}/{}): Loss: {:.5f}".format(
-                        epoch, iteration, len(dset_loaders[phase]),
-                        loss.item()))
-
-            if phase == 'train':
-                loss.backward()
-                nn.utils.clip_grad_norm_(
-                    model.parameters(), clip)
-                depth_optim.step()
-            
-            desired_shape = batch['colour'].shape[1:]
-            one_way = int(math.floor(math.sqrt(desired_shape[0])))
-            map_shape = [3, desired_shape[1] * one_way, desired_shape[2] * one_way]
-            inputs = torch.zeros([batch['colour'].shape[0]] + map_shape, dtype=torch.float32)
-            targets = torch.zeros([batch['colour'].shape[0]] + map_shape, dtype=torch.float32)
-            inputs.requires_grad_(False)
-            targets.requires_grad_(False)
-            
-            for i in range(batch['colour'].shape[0]):
-                sample = {'depth': depth_out[i].detach().cpu(), 'colour': batch['colour'][i].detach().cpu(), 'grid_size': desired_shape[0]}
-                out = data_transform.transform_to_warped(sample)
-                inputs[i] = out['inputs']
-                targets[i] = out['targets']
-            
+            targets = batch['targets']
+            inputs = batch['inputs']
             inputs.requires_grad_()
             targets.requires_grad_(False)
 
@@ -224,13 +173,7 @@ def train(model, depth_model, depth_optim, depth_criterion,
                         exit(-1)
 
             if iteration == len(dset_loaders[phase]) - 1:
-                depth_coloured = torch.zeros(
-                    [batch['depth'].shape[1], 3,
-                     batch['depth'].shape[2], batch['depth'].shape[3]]
-                    )
-                for i in range(batch['colour'].shape[0]):
-                    depth_coloured[i] = data_transform.disparity_to_rgb(
-                        depth_out[0, i].detach().cpu()).transpose_(2, 0).transpose_(1, 2)
+                desired_shape = [int(shape[0]) for shape in batch['shape']]
                 inputs_s = undo_remap(inputs[0], desired_shape, dtype=torch.float32)
                 residuals_s = undo_remap(residuals[0], desired_shape, dtype=torch.float32)
                 outputs_s = undo_remap(outputs[0], desired_shape, dtype=torch.float32)
@@ -239,10 +182,6 @@ def train(model, depth_model, depth_optim, depth_criterion,
                 residual_imgs = cnn_utils.transform_lf_to_torch(residuals_s)
                 out_imgs = cnn_utils.transform_lf_to_torch(outputs_s)
                 truth_imgs = cnn_utils.transform_lf_to_torch(targets_s)
-                depth_grid = vutils.make_grid(
-                    depth_coloured, nrow=8, range=(0,1), normalize=True,
-                    pad_value=1.0
-                )
                 input_grid = vutils.make_grid(
                     input_imgs, nrow=8, range=(0, 1), normalize=True,
                     pad_value=1.0)
@@ -264,14 +203,7 @@ def train(model, depth_model, depth_optim, depth_criterion,
                 writer.add_image(phase + '/output', output_grid, epoch)
                 writer.add_image(phase + '/target', target_grid, epoch)
                 writer.add_image(phase + '/difference', diff_grid, epoch)
-                writer.add_image(phase + '/depths', depth_grid, epoch)
 
-        d_epoch_loss = d_running_loss / len(dset_loaders[phase])
-        writer.add_scalar(phase + '/loss', d_epoch_loss, epoch)
-        print("Phase {} average overall loss {:.5f}".format(phase, d_epoch_loss))
-        time_elapsed = time.time() - since
-        print("Phase {} took {:.0f}s overall".format(phase, time_elapsed))
-        
         epoch_loss = running_loss / len(dset_loaders[phase])
         writer.add_scalar(phase + '/loss', epoch_loss, epoch)
         print("Phase {} average overall loss {:.5f}".format(phase, epoch_loss))

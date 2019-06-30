@@ -88,7 +88,7 @@ def depth_rendering(ref_view, disparity_map, lf_size = (64, 512, 512, 3)):
 
 
     # Tile the disparity map so that there is one for each lf_position - lf_size[0]
-    tiled_map = disparity_map
+    tiled_map = np.tile(disparity_map, (lf_size[0], 1, 1))
 
     # Compute the shifted pixels
     x_shifted = (x.astype(np.float32) - tiled_map * dis_repeated[0]).flatten()

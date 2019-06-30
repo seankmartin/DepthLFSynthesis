@@ -14,7 +14,7 @@ def disparity_based_rendering(disparities, views, grid_size, sample_index):
     shape = (grid_size,) + views.shape[-3:]
     return image_warping.depth_rendering(
         ref_view=views[sample_index],
-        disparity_map=disparities,
+        disparity_map=disparities[sample_index],
         lf_size=shape)
 
 def transform_to_warped(sample):
@@ -33,6 +33,22 @@ def transform_to_warped(sample):
         disparity.numpy(), targets.numpy(), grid_size, sample_index)
     inputs = create_remap(warped_images, dtype=torch.float32)
     targets = create_remap(targets, dtype=torch.float32)
+    return {'inputs': inputs, 'targets': targets, 'shape': shape}
+
+def transform_inviwo_to_warped(sample):
+    """
+    Input a dictionary of depth images and reference views,
+    Output a dictionary of inputs -warped and targets - reference
+    """
+    normalise_sample(sample)
+    disparity = sample['depth']
+    targets = sample['colour']
+    grid_size = sample['grid_size']
+    warped_images = disparity_based_rendering(
+        disparity.numpy(), targets.numpy(), grid_size, 0)
+    inputs = create_remap(warped_images, dtype=torch.float32)
+    #targets = create_remap(targets, dtype=torch.float32)
+    shape = (grid_size,) + targets[0].numpy().shape[-3:]
     return {'inputs': inputs, 'targets': targets, 'shape': shape}
 
 def torch_stack(input_t, channels=64):
