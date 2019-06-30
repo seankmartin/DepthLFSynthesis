@@ -15,7 +15,9 @@ class TrainFromHdf5(data.Dataset):
     Creates a training set from a hdf5 file
     """
 
-    def __init__(self, file_path, patch_size, num_crops, transform=None):
+    def __init__(
+            self, file_path, patch_size,
+            num_crops, transform=None, fixed_seed=False):
         """
         Keyword arguments:
         hdf_file -- the location containing the hdf5 file
@@ -33,7 +35,10 @@ class TrainFromHdf5(data.Dataset):
         self.transform = transform
         self.patch_size = patch_size
         self.num_crops = num_crops
-        random.seed()
+        if fixed_seed:
+            random.seed(100)
+        else:
+            random.seed()
 
     def __getitem__(self, index):
         """
@@ -137,11 +142,11 @@ def create_dataloaders(args, config):
         file_path=file_path,
         patch_size=int(config['NETWORK']['patch_size']),
         num_crops=int(config['NETWORK']['num_crops']),
-        transform=angular_remap)
+        transform=data_transform.angular_remap)
     val_set = ValFromHdf5(
         file_path=file_path,
         patch_size=int(config["NETWORK"]["val_patch_size"]),
-        transform=angular_remap)
+        transform=data_transform.angular_remap)
 
     batch_size = {'train': int(config['NETWORK']['batch_size']), 'val': 1}
     data_loaders = {}
