@@ -4,9 +4,6 @@ import random
 
 import numpy as np
 import torch
-import matplotlib.cm as cm
-
-import image_warping
 
 
 def torch_stack(input_t, channels=64):
