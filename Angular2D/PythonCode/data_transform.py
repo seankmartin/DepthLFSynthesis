@@ -43,6 +43,31 @@ def normalise_sample(sample):
     return sample
 
 
+def create_random_coords(pixel_end, n_samples, patch_size):
+    """Return n random co-ords as V1, H1, V2, H2"""
+    sample_co_ords = np.array(
+        [n_samples, 4], np.uint16)
+    for i in range(n_samples):
+        high = pixel_end - 1 - patch_size
+        start_h = random.randint(0, high)
+        start_v = random.randint(0, high)
+        end_h = start_h + patch_size
+        end_v = start_v + patch_size
+        sample_co_ords[i] = np.array([start_v, start_h, end_v, end_h])
+    return sample_co_ords
+
+
+def crop(sample, crop_cords):
+    """co-ords should be V1, H1, V2, H2"""
+    sample["colour"] = sample["colour"][:, :,
+                                        crop_cords[0]:crop_cords[2],
+                                        crop_cords[1]:crop_cords[3]]
+    sample["warped"] = sample["warped"][:, :,
+                                        crop_cords[0]:crop_cords[2],
+                                        crop_cords[1]:crop_cords[3]]
+    return sample
+
+
 def get_random_crop(sample, patch_size):
     pixel_end = sample['colour'].shape[1]
     high = pixel_end - 1 - patch_size
@@ -50,7 +75,7 @@ def get_random_crop(sample, patch_size):
     start_v = random.randint(0, high)
     end_h = start_h + patch_size
     end_v = start_v + patch_size
-    sample['colour'] = sample['colour'][:, :, start_v:end_v, start_h:end_h]
+    sample = crop(sample, [start_v, start_h, end_v, end_h])
     return sample
 
 
@@ -59,6 +84,8 @@ def random_gamma(sample):
     gamma = random.uniform(0.4, 1.0)
     sample['colour'] = torch.pow(
         sample['colour'].div_(maximum), gamma).mul_(maximum)
+    sample['warped'] = torch.pow(
+        sample['warped'].div_(maximum), gamma).mul_(maximum)
     return sample
 
 
