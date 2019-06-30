@@ -7,18 +7,20 @@ import common
 
 def main(file_location):
     with h5py.File(file_location, 'r') as f:
-        sample_idx = 22
+        sample_idx = 1
         base_path = "/home/sean/lf_datasets/images"
-        for i in range(100):
+        elem = f["train/camera_extrinsics"][sample_idx]
+        print(elem)
+        for i in range(45):
             final_path = "test_im_looking" + str(i) + ".png"
             im_out_location = os.path.join(
                 base_path, final_path)
-            data = np.swapaxes(f["train/images"][i][sample_idx], 0, 2)
+            data = np.swapaxes(f["train/images"][sample_idx][i], 0, 2)
             data = np.swapaxes(data, 0, 1)
             common.save_numpy_image(data, im_out_location)   
         im_out_location = os.path.join(
             base_path, "swizzle.png")
-        data = np.swapaxes(f["train/swizzles"][i], 0, 2)
+        data = np.swapaxes(f["train/swizzles"][sample_idx], 0, 2)
         data = np.swapaxes(data, 0, 1)
         common.save_numpy_image(data, im_out_location) 
 
