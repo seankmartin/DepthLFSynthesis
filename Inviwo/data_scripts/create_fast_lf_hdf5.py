@@ -51,30 +51,31 @@ def create_hdf_storage(hdf5_file, config):
         num_samples = config["num_samples"][set_type]
 
         # Setup the hdf5
+        chs = config['channels']
         colour = hdf5_file.create_group(set_type)
         colour.attrs['lf_shape'] = [
             num_samples, spatial_cols * spatial_rows,
-            4, pixel_dim_y, pixel_dim_x]
+            chs, pixel_dim_y, pixel_dim_x]
         colour.attrs['focal_length'] = cam.projectionMatrix[0][0]
         colour.attrs['near_plane'] = cam.nearPlane
         colour.attrs['far_plane'] = cam.farPlane
-        mean_shape = [num_samples, 4, pixel_dim_y, pixel_dim_x]
+        mean_shape = [num_samples, chs, pixel_dim_y, pixel_dim_x]
         time_shape = [num_samples]
         cam_shape = [num_samples, 9]
         colour.create_dataset('images', colour.attrs['lf_shape'], np.uint8,
-                                chunks = (1, 1, 4, pixel_dim_y, pixel_dim_x),
+                                chunks = (1, 1, chs, pixel_dim_y, pixel_dim_x),
                                 compression = "lzf",
                                 shuffle = True)
         colour.create_dataset('warped', colour.attrs['lf_shape'], np.uint8,
-                                chunks = (1, 1, 4, pixel_dim_y, pixel_dim_x),
+                                chunks = (1, 1, chs, pixel_dim_y, pixel_dim_x),
                                 compression = "lzf",
                                 shuffle = True)
         colour.create_dataset('mean', mean_shape, np.float32,
-                                chunks = (1, 4, pixel_dim_y, pixel_dim_x),
+                                chunks = (1, chs, pixel_dim_y, pixel_dim_x),
                                 compression = "lzf",
                                 shuffle = True)
         colour.create_dataset('var', mean_shape, np.float32,
-                                chunks = (1, 4, pixel_dim_y, pixel_dim_x),
+                                chunks = (1, chs, pixel_dim_y, pixel_dim_x),
                                 compression = "lzf",
                                 shuffle = True)
         colour.create_dataset('timing', time_shape, np.float32)
@@ -145,7 +146,7 @@ def save_looking_to_hdf5_group(
                 im_data = total_im_data[x_start:x_end, y_start:y_end]
                 im_data = np.flipud(np.swapaxes(im_data, 0, 2))
                 im_data = im_data[::-1, ::-1, ...]
-                group['images'][sample_index, idx] = im_data
+                group['images'][sample_index, idx] = im_data[:3, ...]
                 group['timing'][sample_index] = time_taken
                 accumulator_list[i] = welford.update(
                     accumulator_list[i], np.asarray(im_data, dtype=np.float32))
@@ -162,13 +163,13 @@ def save_looking_to_hdf5_group(
                 im_data = total_im_data[x_start:x_end, y_start:y_end]
                 im_data = np.flipud(np.swapaxes(im_data, 0, 2))
                 im_data = im_data[::-1, ::-1, ...]
-                group['warped'][sample_index, idx] = im_data
+                group['warped'][sample_index, idx] = im_data[:3, ...]
 
         for i, group_tuple in enumerate(h5_canvas_list):
             group = group_tuple[0]
             mean, var, _ = welford.finalize(accumulator_list[i])
-            group['mean'][sample_index, :, :, :] = mean
-            group['var'][sample_index, :, :, :] = var
+            group['mean'][sample_index, :, :, :] = mean[:3, ...]
+            group['var'][sample_index, :, :, :] = var[3:, ...]
 
         print("Finished writing LF {0} in {1:.2f}".format(
             sample_index, time() - overall_start_time))

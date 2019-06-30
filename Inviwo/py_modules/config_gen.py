@@ -134,7 +134,8 @@ def setup_generic_cfg():
         "min_look_from": 0.35,
         "spatial_rows": 8,
         "spatial_cols": 8,
-        "random_light": False
+        "random_light": False,
+        "channels": 3
     }
     config["save_main_dir"] = os.path.join(
         home, 'lf_datasets', 'test_sets')
