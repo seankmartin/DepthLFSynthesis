@@ -252,9 +252,9 @@ if __name__ == '__main__':
     PARSER.add_argument('--config', "--cfg", default='main.ini', type=str,
                         help="Name of config file to use")
     PARSER.add_argument('--n_feats', '--nf', default=8, type=int,
-                        help="Number of features to use, default 64")
+                        help="Number of features to use, default 8")
     PARSER.add_argument('--n_resblocks', '--nr', default=4, type=int,
-                        help="Number of residual blocks, default 10")
+                        help="Number of residual blocks, default 4")
     PARSER.add_argument('--res_scale', '--rs', default=1.0, type=float,
                         help="Float to scale residuals by, default 1.0")
     PARSER.add_argument('--frozen', '--f', default=True, type=bool,
