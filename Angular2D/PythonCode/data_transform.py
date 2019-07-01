@@ -50,15 +50,15 @@ def subsample_channels(sample, num_channels):
 
 def create_random_coords(pixel_end, n_samples, patch_size):
     """Return n random co-ords as V1, H1, V2, H2"""
-    sample_co_ords = np.array(
-        [n_samples, 4], np.uint16)
+    sample_co_ords = np.empty(
+        (n_samples, 4), np.uint16)
     for i in range(n_samples):
         high = pixel_end - 1 - patch_size
         start_h = random.randint(0, high)
         start_v = random.randint(0, high)
         end_h = start_h + patch_size
         end_v = start_v + patch_size
-        sample_co_ords[i] = np.array([start_v, start_h, end_v, end_h])
+        sample_co_ords[i, :] = [start_v, start_h, end_v, end_h]
     return sample_co_ords
 
 
@@ -81,7 +81,7 @@ def angular_remap(sample):
 
 
 def get_random_crop(sample, patch_size):
-    pixel_end = sample['colour'].shape[1]
+    pixel_end = sample['colour'].shape[-1]
     high = pixel_end - 1 - patch_size
     start_h = random.randint(0, high)
     start_v = random.randint(0, high)

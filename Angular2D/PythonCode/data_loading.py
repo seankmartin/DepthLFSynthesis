@@ -32,6 +32,7 @@ class TrainFromHdf5(data.Dataset):
             self.num_samples = h5_file['train'].attrs['lf_shape'][0]
             self.grid_size = h5_file['train'].attrs['lf_shape'][1]
         self.colour = '/train/images'
+        self.warped = '/train/warped'
         self.transform = transform
         self.patch_size = patch_size
         self.num_crops = num_crops
@@ -50,10 +51,11 @@ class TrainFromHdf5(data.Dataset):
         with h5py.File(
                 self.file_path, mode='r',
                 libver='latest', swmr=True) as h5_file:
+            idx = index // self.num_crops
             colour = torch.tensor(
-                h5_file[self.colour][index], dtype=torch.float32)
+                h5_file[self.colour][idx], dtype=torch.float32)
             warped = torch.tensor(
-                h5_file[self.warped][index], dtype=torch.float32)
+                h5_file[self.warped][idx], dtype=torch.float32)
             grid_size = self.grid_size
             sample = {
                 'colour': colour,
@@ -92,14 +94,15 @@ class ValFromHdf5(data.Dataset):
         self.file_path = file_path
         with h5py.File(
                 file_path, mode='r', libver='latest', swmr=True) as h5_file:
-            self.num_samples = h5_file['val'].attrs['shape'][0]
-            self.grid_size = h5_file['val'].attrs['shape'][1]
+            self.num_samples = h5_file['val'].attrs['lf_shape'][0]
+            self.grid_size = h5_file['val'].attrs['lf_shape'][1]
+            self.im_size = h5_file['val'].attrs['lf_shape'][-1]
         self.colour = '/val/images'
         self.warped = '/val/warped'
         self.transform = transform
         self.patch_size = patch_size
         self.crop_cords = data_transform.create_random_coords(
-            self.grid_size, self.num_samples, self.patch_size
+            self.im_size, self.num_samples, self.patch_size
         )
         self.sub_chan = sub_chan
 

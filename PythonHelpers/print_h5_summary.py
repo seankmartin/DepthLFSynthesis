@@ -1,5 +1,6 @@
 import h5py
 import os
+import argparse
 
 def walk_dict(d,depth=0):
     for k,v in sorted(d.items(),key=lambda x: x[0]):
@@ -28,8 +29,9 @@ def main(file_location):
         print()
 
 if __name__ == "__main__":
-    file_location = os.path.join(
-        "/home/sean/lf_datasets/test_sets/", "head_set_h5209.h5"
-    )
-    main(file_location)
+    PARSER = argparse.ArgumentParser(
+        description='Process modifiable parameters from command line')
+    PARSER.add_argument("--loc", type=str, help="h5 location")
+    ARGS, UNPARSED = PARSER.parse_known_args()
+    main(ARGS.loc)
 
