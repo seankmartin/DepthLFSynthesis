@@ -120,7 +120,10 @@ def train(model, dset_loaders, optimizer, lr_scheduler,
     """
     lr_scheduler.step()
     # Each epoch has a training and validation phase
-    for phase in dset_loaders.keys():
+    all_keys = dset_loaders.keys()
+    all_keys.remove("train")
+    all_keys = ["train"] + all_keys
+    for phase in all_keys:
         since = time.time()
         if phase == 'train':
             model.train()  # Set model to training mode
