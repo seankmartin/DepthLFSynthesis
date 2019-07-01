@@ -58,13 +58,14 @@ def setup_head_cfg():
             "set_types" : ['train', 'unseen_vol', 'unseen_tf'],
             "num_samples": {'train': 25, 'unseen_vol': 10, 'unseen_tf': 10},
             "num_random_tfs": {'train': 1, 'unseen_vol': 1, 'unseen_tf': 1},
-            "hdf5_name": "head_set_h5209.h5",
-            "baseline": 0.03,
+            "hdf5_name": "head_set_new.h5",
+            "baseline": 0.01,
             "look_up": [0, 0, 1],
             "max_look_from": 1.1,
             "min_look_from": 0.35,
             "spatial_rows": 8,
             "spatial_cols": 8,
+            "channels": 3
         }
     config["save_main_dir"] = os.path.join(
         home, 'lf_datasets', 'test_sets')

@@ -39,7 +39,7 @@ def get_canvas_by_id(network, id):
     for canvas in canvases:
         if canvas.identifier == id:
             return canvas
-    print("No canvas found with name {}", id)
+    print("No canvas found with name {}".format(id))
     return None
 
 if __name__ == "__main__":
