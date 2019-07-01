@@ -5,7 +5,7 @@ import ivw.utils as inviwo_utils
 import sys
 from time import time
 # Location of py_modules folder
-ivw_custom_py_modules_location = "/home/sean/LF_Volume_Synthesis/Inviwo/py_modules"
+ivw_custom_py_modules_location = "/home/sean/repos/DepthLFSynthesis/Inviwo/py_modules"
 sys.path.append(ivw_custom_py_modules_location)
 
 import h5py
@@ -56,6 +56,9 @@ def create_hdf_storage(hdf5_file, config):
         colour.attrs['lf_shape'] = [
             num_samples, spatial_cols * spatial_rows,
             chs, pixel_dim_y, pixel_dim_x]
+        print("Creating dataset with shape {}".format(
+            colour.attrs["lf_shape"]
+        ))
         colour.attrs['focal_length'] = cam.projectionMatrix[0][0]
         colour.attrs['near_plane'] = cam.nearPlane
         colour.attrs['far_plane'] = cam.farPlane
@@ -235,7 +238,7 @@ def main(config):
     print("Finished writing to HDF5 in {}".format(hdf5_path))
 
 if __name__ == '__main__':
-    config = choose_cfg("generic")
+    config = choose_cfg("tiny")
     lu = config['look_up']
     config['look_up'] = vec3(lu[0], lu[1], lu[2])
     if config["constant_seed"]:

@@ -38,6 +38,8 @@ def choose_cfg(choice):
         return setup_default_cfg()
     elif choice == "generic":
         return setup_generic_cfg()
+    elif choice == "tiny":
+        return setup_tiny_cfg()
     else:
         print("Choice not found for cfg, using default")
         return setup_default_cfg() 
@@ -132,6 +134,32 @@ def setup_generic_cfg():
         "pixel_dim_y": 512,
         "max_look_from": 1.0,
         "min_look_from": 0.35,
+        "spatial_rows": 8,
+        "spatial_cols": 8,
+        "random_light": False,
+        "channels": 3
+    }
+    config["save_main_dir"] = os.path.join(
+        home, 'lf_datasets', 'test_sets')
+
+    return config
+
+def setup_tiny_cfg():
+    home = os.path.expanduser('~')
+
+    config = {
+        "constant_seed": True,
+        "should_resize": False,
+        "plane": True,
+        "clip": False,
+        "set_types": {"train", "val"},
+        "num_samples": {'train': 10, 'val': 5},
+        "hdf5_name": "tiny.h5",
+        "look_up": [0, 1, 0],
+        "pixel_dim_x": 512,
+        "pixel_dim_y": 512,
+        "max_look_from": 1.0,
+        "min_look_from": 0.4,
         "spatial_rows": 8,
         "spatial_cols": 8,
         "random_light": False,
