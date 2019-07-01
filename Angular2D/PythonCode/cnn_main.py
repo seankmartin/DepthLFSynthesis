@@ -259,6 +259,7 @@ if __name__ == '__main__':
                         help="Float to scale residuals by, default 1.0")
     PARSER.add_argument('--frozen', '--f', default=True, type=bool,
                         help="Should the loaded weights be frozen?, default=True")
+    PARSER.add_argument("--absolute_cfg", "-ac", action="store_true")
     # Any unknown argument will go to unparsed
     ARGS, UNPARSED = PARSER.parse_known_args()
     if ARGS.tag is None:
@@ -271,7 +272,10 @@ if __name__ == '__main__':
         exit(-1)
     # Config file modifiable parameters
     CONFIG = configparser.ConfigParser()
-    CONFIG.read(os.path.join('config', ARGS.config))
+    if ARGS.absolute_cfg:
+        CONFIG.read(ARGS.config)
+    else:
+        CONFIG.read(os.path.join('config', ARGS.config))
     from datetime import datetime
     TBOARD_LOC = os.path.join(
         CONFIG['PATH']['tboard'],
