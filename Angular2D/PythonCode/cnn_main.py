@@ -178,24 +178,20 @@ def train(model, dset_loaders, optimizer, lr_scheduler,
                 residuals_s = undo_remap(residuals[0], desired_shape, dtype=torch.float32)
                 outputs_s = undo_remap(outputs[0], desired_shape, dtype=torch.float32)
                 targets_s = undo_remap(targets[0], desired_shape, dtype=torch.float32)
-                input_imgs = cnn_utils.transform_lf_to_torch(inputs_s)
-                residual_imgs = cnn_utils.transform_lf_to_torch(residuals_s)
-                out_imgs = cnn_utils.transform_lf_to_torch(outputs_s)
-                truth_imgs = cnn_utils.transform_lf_to_torch(targets_s)
                 input_grid = vutils.make_grid(
-                    input_imgs, nrow=8, range=(0, 1), normalize=True,
+                    inputs_s, nrow=8, range=(0, 1), normalize=True,
                     pad_value=1.0)
                 residual_grid = vutils.make_grid(
-                    residual_imgs, nrow=8, range=(-1, 1), normalize=True,
+                    residuals_s, nrow=8, range=(-1, 1), normalize=True,
                     pad_value=1.0)
                 output_grid = vutils.make_grid(
-                    out_imgs, nrow=8, range=(0, 1), normalize=True,
+                    outputs_s, nrow=8, range=(0, 1), normalize=True,
                     pad_value=1.0)
                 target_grid = vutils.make_grid(
-                    truth_imgs, nrow=8, range=(0, 1), normalize=True,
+                    targets_s, nrow=8, range=(0, 1), normalize=True,
                     pad_value=1.0)
                 diff_grid = vutils.make_grid(
-                    torch.abs(truth_imgs - out_imgs),
+                    torch.abs(targets_s - outputs_s),
                     nrow=8, range=(0, 1), normalize=True,
                     pad_value=1.0)
                 writer.add_image(phase + '/input', input_grid, epoch)
