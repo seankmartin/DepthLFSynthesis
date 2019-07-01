@@ -104,9 +104,10 @@ class ValFromHdf5(data.Dataset):
         self.transform = transform
         self.patch_size = patch_size
         self.val_transform = val_transform
-        self.crop_cords = data_transform.create_random_coords(
-            self.im_size, self.num_samples, self.patch_size
-        )
+        if self.val_transform:
+            self.crop_cords = data_transform.create_random_coords(
+                self.im_size, self.num_samples, self.patch_size
+            )
         self.sub_chan = sub_chan
 
     def __getitem__(self, index):
