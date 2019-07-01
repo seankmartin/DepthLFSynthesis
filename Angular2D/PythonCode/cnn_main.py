@@ -25,28 +25,29 @@ from data_transform import undo_remap
 CONTINUE_MESSAGE = "==> Would you like to continue training?"
 SAVE_MESSAGE = "==> Would you like to save the model?"
 
+
 def main(args, config, writer):
     best_loss = math.inf
     best_model, best_epoch = None, None
     cuda = cnn_utils.check_cuda(config)
 
-    #Attempts to otimise - see
-    #https://discuss.pytorch.org/t/what-does-torch-backends-cudnn-benchmark-do
+    # Attempts to otimise - see
+    # https://discuss.pytorch.org/t/what-does-torch-backends-cudnn-benchmark-do
     torch.backends.cudnn.benchmark = True
 
     data_loaders = create_dataloaders(args, config)
 
     model, criterion, optimizer, lr_scheduler = setup_model(args)
-    if cuda: # GPU support
+    if cuda:  # GPU support
         model = model.cuda()
-        #The below is only needed if loss fn has params
+        # The below is only needed if loss fn has params
         #criterion = criterion.cuda()
 
-    if args.checkpoint: # Resume from a checkpoint
+    if args.checkpoint:  # Resume from a checkpoint
         best_loss = cnn_utils.load_from_checkpoint(
-                        model, optimizer, args, config)
+            model, optimizer, args, config)
 
-    if args.pretrained: # Direct copy weights from another model
+    if args.pretrained:  # Direct copy weights from another model
         cnn_utils.load_weights(model, args, config, frozen=args.frozen)
 
     # Perform training and testing
@@ -63,13 +64,13 @@ def main(args, config, writer):
             best_epoch = epoch
             best_model = copy.deepcopy(model)
 
-        #Update the scheduler - restarting
+        # Update the scheduler - restarting
         if lr_scheduler.last_epoch == lr_scheduler.T_max:
             for group in optimizer.param_groups:
                 group['lr'] = args.lr
             lr_scheduler = CosineAnnealingLR(
                 optimizer,
-                T_max = lr_scheduler.T_max * 2)
+                T_max=lr_scheduler.T_max * 2)
 
         cnn_utils.log_all_layer_weights(model, writer, epoch)
 
@@ -110,6 +111,7 @@ def main(args, config, writer):
         os.path.join(scalar_dir, "all_scalars.json"))
     writer.close()
 
+
 def train(model, dset_loaders, optimizer, lr_scheduler,
           criterion, epoch, cuda, clip, writer):
     """
@@ -118,12 +120,12 @@ def train(model, dset_loaders, optimizer, lr_scheduler,
     """
     lr_scheduler.step()
     # Each epoch has a training and validation phase
-    for phase in ['train', 'val']:
+    for phase in dset_loaders.keys():
         since = time.time()
         if phase == 'train':
-            model.train() # Set model to training mode
+            model.train()  # Set model to training mode
         else:
-            model.eval() # Set model to evaluate mode
+            model.eval()  # Set model to evaluate mode
 
         running_loss = 0.0
         for iteration, batch in enumerate(dset_loaders[phase]):
@@ -174,10 +176,14 @@ def train(model, dset_loaders, optimizer, lr_scheduler,
 
             if iteration == len(dset_loaders[phase]) - 1:
                 desired_shape = [int(shape[0]) for shape in batch['shape']]
-                inputs_s = undo_remap(inputs[0], desired_shape, dtype=torch.float32)
-                residuals_s = undo_remap(residuals[0], desired_shape, dtype=torch.float32)
-                outputs_s = undo_remap(outputs[0], desired_shape, dtype=torch.float32)
-                targets_s = undo_remap(targets[0], desired_shape, dtype=torch.float32)
+                inputs_s = undo_remap(
+                    inputs[0], desired_shape, dtype=torch.float32)
+                residuals_s = undo_remap(
+                    residuals[0], desired_shape, dtype=torch.float32)
+                outputs_s = undo_remap(
+                    outputs[0], desired_shape, dtype=torch.float32)
+                targets_s = undo_remap(
+                    targets[0], desired_shape, dtype=torch.float32)
                 input_grid = vutils.make_grid(
                     inputs_s, nrow=8, range=(0, 1), normalize=True,
                     pad_value=1.0)
@@ -206,17 +212,18 @@ def train(model, dset_loaders, optimizer, lr_scheduler,
         time_elapsed = time.time() - since
         print("Phase {} took {:.0f}s overall".format(phase, time_elapsed))
 
-        if phase == 'val':
+        if phase != 'train':
             print()
             for idx, param_group in enumerate(optimizer.param_groups):
                 writer.add_scalar(
                     'learning_rate', param_group['lr'], epoch)
             return epoch_loss
 
+
 if __name__ == '__main__':
-    #Command line modifiable parameters
-    #See https://github.com/twtygqyy/pytorch-vdsr/blob/master/main_vdsr.py
-    #For the source of some of these arguments
+    # Command line modifiable parameters
+    # See https://github.com/twtygqyy/pytorch-vdsr/blob/master/main_vdsr.py
+    # For the source of some of these arguments
     PARSER = argparse.ArgumentParser(
         description='Process modifiable parameters from command line')
     PARSER.add_argument("--nEpochs", "--n", type=int, default=50,
@@ -252,7 +259,7 @@ if __name__ == '__main__':
                         help="Float to scale residuals by, default 1.0")
     PARSER.add_argument('--frozen', '--f', default=True, type=bool,
                         help="Should the loaded weights be frozen?, default=True")
-    #Any unknown argument will go to unparsed
+    # Any unknown argument will go to unparsed
     ARGS, UNPARSED = PARSER.parse_known_args()
     if ARGS.tag is None:
         print("Please enter a --tag flag through cmd when running")
@@ -262,7 +269,7 @@ if __name__ == '__main__':
         print("Unrecognised command line argument passed")
         print(UNPARSED)
         exit(-1)
-    #Config file modifiable parameters
+    # Config file modifiable parameters
     CONFIG = configparser.ConfigParser()
     CONFIG.read(os.path.join('config', ARGS.config))
     from datetime import datetime
