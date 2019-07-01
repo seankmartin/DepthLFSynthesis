@@ -85,8 +85,8 @@ class ValFromHdf5(data.Dataset):
     """
 
     def __init__(
-        self, file_path, patch_size, 
-        transform=None, sub_chan=False, val_transform=False):
+            self, file_path, patch_size, name,
+            transform=None, sub_chan=False, val_transform=False):
         """
         Keyword arguments:
         hdf_file -- the location containing the hdf5 file
@@ -99,8 +99,8 @@ class ValFromHdf5(data.Dataset):
             self.num_samples = h5_file['val'].attrs['lf_shape'][0]
             self.grid_size = h5_file['val'].attrs['lf_shape'][1]
             self.im_size = h5_file['val'].attrs['lf_shape'][-1]
-        self.colour = '/val/images'
-        self.warped = '/val/warped'
+        self.colour = '/{}/images'.format(name)
+        self.warped = '/{}/warped'.format(name)
         self.transform = transform
         self.patch_size = patch_size
         self.val_transform = val_transform
@@ -161,16 +161,22 @@ def create_dataloaders(args, config):
         num_crops=int(config['NETWORK']['num_crops']),
         transform=data_transform.angular_remap,
         sub_chan=config["NETWORK"]["sub_chan"])
-    val_set = ValFromHdf5(
-        file_path=file_path,
-        patch_size=int(config["NETWORK"]["val_patch_size"]),
-        transform=data_transform.angular_remap,
-        sub_chan=config["NETWORK"]["sub_chan"])
+    batch_size = {'train': int(config['NETWORK']['batch_size'])}
+    all_sets = [('train', train_set)]
+    val_size = 1
+    for tup in config["VALSETS"].items():
+        name = tup[1]
+        new_set = ValFromHdf5(
+            file_path=file_path, name=name,
+            patch_size=int(config["NETWORK"]["val_patch_size"]),
+            transform=data_transform.angular_remap,
+            sub_chan=config["NETWORK"]["sub_chan"])
+        batch_size[name] = val_size
+        all_sets.append((name, new_set))
 
-    batch_size = {'train': int(config['NETWORK']['batch_size']), 'val': 1}
     data_loaders = {}
     threads = int(config['NETWORK']['num_workers'])
-    for name, dset in (('train', train_set), ('val', val_set)):
+    for name, dset in all_sets:
         data_loaders[name] = DataLoader(
             dataset=dset, num_workers=threads,
             batch_size=batch_size[name],
