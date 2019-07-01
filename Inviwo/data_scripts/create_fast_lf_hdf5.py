@@ -96,6 +96,7 @@ def save_looking_to_hdf5_group(
         cam = inviwopy.app.network.MeshClipping.camera
         
         accumulator_list = []
+        chs = config['channels']
         # Gathers accumulators for welford mean and var
         for i, group_tuple in enumerate(h5_canvas_list):
             group = group_tuple[0]
@@ -149,10 +150,11 @@ def save_looking_to_hdf5_group(
                 im_data = total_im_data[x_start:x_end, y_start:y_end]
                 im_data = np.flipud(np.swapaxes(im_data, 0, 2))
                 im_data = im_data[::-1, ::-1, ...]
-                group['images'][sample_index, idx] = im_data[:3, ...]
+                group['images'][sample_index, idx] = im_data[:chs, ...]
                 group['timing'][sample_index] = time_taken
                 accumulator_list[i] = welford.update(
-                    accumulator_list[i], np.asarray(im_data, dtype=np.float32))
+                    accumulator_list[i], 
+                    np.asarray(im_data[:chs, ...], dtype=np.float32))
 
             total_im_data = ivw_helpers.get_image(w_canvas)
             # Inviwo stores data in a different indexing to regular
@@ -166,13 +168,13 @@ def save_looking_to_hdf5_group(
                 im_data = total_im_data[x_start:x_end, y_start:y_end]
                 im_data = np.flipud(np.swapaxes(im_data, 0, 2))
                 im_data = im_data[::-1, ::-1, ...]
-                group['warped'][sample_index, idx] = im_data[:3, ...]
+                group['warped'][sample_index, idx] = im_data[:chs, ...]
 
         for i, group_tuple in enumerate(h5_canvas_list):
             group = group_tuple[0]
             mean, var, _ = welford.finalize(accumulator_list[i])
-            group['mean'][sample_index, :, :, :] = mean[:3, ...]
-            group['var'][sample_index, :, :, :] = var[3:, ...]
+            group['mean'][sample_index, :, :, :] = mean
+            group['var'][sample_index, :, :, :] = var
 
         print("Finished writing LF {0} in {1:.2f}".format(
             sample_index, time() - overall_start_time))
