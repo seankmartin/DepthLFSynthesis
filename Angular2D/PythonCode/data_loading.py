@@ -96,9 +96,9 @@ class ValFromHdf5(data.Dataset):
         self.file_path = file_path
         with h5py.File(
                 file_path, mode='r', libver='latest', swmr=True) as h5_file:
-            self.num_samples = h5_file['val'].attrs['lf_shape'][0]
-            self.grid_size = h5_file['val'].attrs['lf_shape'][1]
-            self.im_size = h5_file['val'].attrs['lf_shape'][-1]
+            self.num_samples = h5_file[name].attrs['lf_shape'][0]
+            self.grid_size = h5_file[name].attrs['lf_shape'][1]
+            self.im_size = h5_file[name].attrs['lf_shape'][-1]
         self.colour = '/{}/images'.format(name)
         self.warped = '/{}/warped'.format(name)
         self.transform = transform
