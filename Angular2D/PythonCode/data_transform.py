@@ -42,6 +42,12 @@ def normalise_sample(sample):
     return sample
 
 
+def subsample_channels(sample, num_channels):
+    """Extracts a subsample of channels from the sample"""
+    sample['colour'] = sample['colour'][:, :num_channels, ...]
+    sample['warped'] = sample['warped'][:, :num_channels, ...]
+    return sample
+
 def create_random_coords(pixel_end, n_samples, patch_size):
     """Return n random co-ords as V1, H1, V2, H2"""
     sample_co_ords = np.array(

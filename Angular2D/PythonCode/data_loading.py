@@ -17,7 +17,7 @@ class TrainFromHdf5(data.Dataset):
 
     def __init__(
             self, file_path, patch_size,
-            num_crops, transform=None, fixed_seed=False):
+            num_crops, transform=None, fixed_seed=False, sub_chan=False):
         """
         Keyword arguments:
         hdf_file -- the location containing the hdf5 file
@@ -35,6 +35,7 @@ class TrainFromHdf5(data.Dataset):
         self.transform = transform
         self.patch_size = patch_size
         self.num_crops = num_crops
+        self.sub_chan = sub_chan
         if fixed_seed:
             random.seed(100)
         else:
@@ -62,6 +63,10 @@ class TrainFromHdf5(data.Dataset):
             sample = data_transform.get_random_crop(sample, self.patch_size)
             sample = data_transform.random_gamma(sample)
 
+            if self.sub_chan:
+                sample = data_transform.subsample_channels(
+                    sample, 3
+                )
             if self.transform:
                 sample = self.transform(sample)
 
@@ -77,7 +82,7 @@ class ValFromHdf5(data.Dataset):
     Creates a validation set from a hdf5 file
     """
 
-    def __init__(self, file_path, patch_size, transform=None):
+    def __init__(self, file_path, patch_size, transform=None, sub_chan=False):
         """
         Keyword arguments:
         hdf_file -- the location containing the hdf5 file
@@ -96,6 +101,7 @@ class ValFromHdf5(data.Dataset):
         self.crop_cords = data_transform.create_random_coords(
             self.grid_size, self.num_samples, self.patch_size
         )
+        self.sub_chan = sub_chan
 
     def __getitem__(self, index):
         """
@@ -119,6 +125,10 @@ class ValFromHdf5(data.Dataset):
         # Running out of GPU memory on validation
         sample = data_transform.crop(sample, self.crop_cords[index])
 
+        if self.sub_chan:
+            sample = data_transform.subsample_channels(
+                sample, 3
+            )
         if self.transform:
             sample = self.transform(sample)
 
@@ -142,11 +152,13 @@ def create_dataloaders(args, config):
         file_path=file_path,
         patch_size=int(config['NETWORK']['patch_size']),
         num_crops=int(config['NETWORK']['num_crops']),
-        transform=data_transform.angular_remap)
+        transform=data_transform.angular_remap,
+        sub_chan=True)
     val_set = ValFromHdf5(
         file_path=file_path,
         patch_size=int(config["NETWORK"]["val_patch_size"]),
-        transform=data_transform.angular_remap)
+        transform=data_transform.angular_remap,
+        sub_chan=True)
 
     batch_size = {'train': int(config['NETWORK']['batch_size']), 'val': 1}
     data_loaders = {}
