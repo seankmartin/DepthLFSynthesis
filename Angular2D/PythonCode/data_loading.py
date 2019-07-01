@@ -84,7 +84,9 @@ class ValFromHdf5(data.Dataset):
     Creates a validation set from a hdf5 file
     """
 
-    def __init__(self, file_path, patch_size, transform=None, sub_chan=False):
+    def __init__(
+        self, file_path, patch_size, 
+        transform=None, sub_chan=False, val_transform=False):
         """
         Keyword arguments:
         hdf_file -- the location containing the hdf5 file
@@ -101,6 +103,7 @@ class ValFromHdf5(data.Dataset):
         self.warped = '/val/warped'
         self.transform = transform
         self.patch_size = patch_size
+        self.val_transform = val_transform
         self.crop_cords = data_transform.create_random_coords(
             self.im_size, self.num_samples, self.patch_size
         )
@@ -126,7 +129,8 @@ class ValFromHdf5(data.Dataset):
                 'grid_size': grid_size}
 
         # Running out of GPU memory on validation
-        sample = data_transform.crop(sample, self.crop_cords[index])
+        if self.val_transform:
+            sample = data_transform.crop(sample, self.crop_cords[index])
 
         if self.sub_chan:
             sample = data_transform.subsample_channels(
