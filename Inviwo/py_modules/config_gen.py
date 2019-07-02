@@ -40,9 +40,60 @@ def choose_cfg(choice):
         return setup_generic_cfg()
     elif choice == "tiny":
         return setup_tiny_cfg()
+    elif choice == "tinyhead"
+        return setup_small_head_cfg()
     else:
         print("Choice not found for cfg, using default")
         return setup_default_cfg() 
+
+def setup_small_head_cfg():
+    home = os.path.expanduser('~')
+
+    config = {
+            "constant_seed": True,
+            "should_resize": False,
+            "should_use_numpy_vol" : True,
+            "pixel_dim_x": 256,
+            "pixel_dim_y": 256,
+            "clip": False,
+            "plane": True,
+            "set_types" : ['train', 'unseen_vol', 'unseen_tf'],
+            "num_samples": {'train': 1, 'unseen_vol': 1, 'unseen_tf': 1},
+            "num_random_tfs": {'train': 1, 'unseen_vol': 1, 'unseen_tf': 1},
+            "hdf5_name": "head_set_new.h5",
+            "baseline": 0.01,
+            "look_up": [0, 0, 1],
+            "max_look_from": 1.2,
+            "min_look_from": 0.5,
+            "spatial_rows": 8,
+            "spatial_cols": 8,
+            "channels": 3
+        }
+    config["save_main_dir"] = os.path.join(
+        home, 'lf_datasets', 'test_sets')
+
+    config["volume_dir"] = os.path.join(
+        home, 'lf_data', 'head_volumes')
+
+    config["unseen_volume_dir"] = os.path.join(
+        home, 'lf_data', 'new_head_volumes')
+
+    config["base_tf_dir"] = os.path.join(
+        home, 'lf_data', 'head_tfs')
+
+    config["unseen_tf_dir"] = os.path.join(
+        home, 'lf_data', 'new_head_tfs')
+
+    dirs = [
+        config["volume_dir"], config["unseen_volume_dir"], 
+        config["base_tf_dir"], config["unseen_tf_dir"]]
+
+    for dir_ in dirs:
+        if not os.path.isdir(dir_):
+            print("{} does not exist, creating it now...".format(dir_))
+            pathlib.Path(dir_).mkdir(parents=True, exist_ok=True)
+
+    return config
 
 def setup_head_cfg():
     home = os.path.expanduser('~')
