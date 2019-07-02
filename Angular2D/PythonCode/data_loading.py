@@ -137,6 +137,8 @@ class ValFromHdf5(data.Dataset):
             sample = data_transform.subsample_channels(
                 sample, 3
             )
+        
+        sample = data_transform.normalise_sample(sample)
         if self.transform:
             sample = self.transform(sample)
 
