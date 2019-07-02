@@ -53,11 +53,15 @@ def main(args, config, writer):
     # Perform training and testing
     print("Beginning training loop")
     for epoch in range(args.start_epoch, args.start_epoch + args.nEpochs):
-        epoch_loss = train(
+        epoch_loss = 0
+        epoch_loss_all = train(
             model=model, dset_loaders=data_loaders,
             optimizer=optimizer, lr_scheduler=lr_scheduler,
             criterion=criterion, epoch=epoch,
             cuda=cuda, clip=args.clip, writer=writer)
+
+        for val in epoch_loss_all:
+            epoch_loss += val / len(epoch_loss_all)
 
         if epoch_loss < best_loss:
             best_loss = epoch_loss
@@ -72,9 +76,9 @@ def main(args, config, writer):
                 optimizer,
                 T_max=lr_scheduler.T_max * 2)
 
-        cnn_utils.log_all_layer_weights(model, writer, epoch)
+        # cnn_utils.log_all_layer_weights(model, writer, epoch)
 
-        if epoch % 5 == 0 and epoch != 0:
+        if epoch % 1 == 0 and epoch != 0:
             cnn_utils.save_checkpoint(
                 model, epoch, optimizer, best_loss,
                 config['PATH']['checkpoint_dir'],
@@ -105,10 +109,10 @@ def main(args, config, writer):
 
     parent_dir = os.path.abspath(os.pardir)
     scalar_dir = os.path.join(parent_dir, "logs", args.tag)
-    if not os.path.isdir(scalar_dir):
-        pathlib.Path(scalar_dir).mkdir(parents=True, exist_ok=True)
-    writer.export_scalars_to_json(
-        os.path.join(scalar_dir, "all_scalars.json"))
+    # if not os.path.isdir(scalar_dir):
+    #     pathlib.Path(scalar_dir).mkdir(parents=True, exist_ok=True)
+    # writer.export_scalars_to_json(
+    #     os.path.join(scalar_dir, "all_scalars.json"))
     writer.close()
 
 
@@ -123,6 +127,7 @@ def train(model, dset_loaders, optimizer, lr_scheduler,
     all_keys = list(dset_loaders.keys())
     all_keys.remove("train")
     all_keys = ["train"] + all_keys
+    epoch_loss_all = []
     for phase in all_keys:
         since = time.time()
         if phase == 'train':
@@ -220,8 +225,9 @@ def train(model, dset_loaders, optimizer, lr_scheduler,
             for idx, param_group in enumerate(optimizer.param_groups):
                 writer.add_scalar(
                     'learning_rate', param_group['lr'], epoch)
-            return epoch_loss
+            epoch_loss_all.append(epoch_loss)
 
+    return epoch_loss_all
 
 if __name__ == '__main__':
     # Command line modifiable parameters
