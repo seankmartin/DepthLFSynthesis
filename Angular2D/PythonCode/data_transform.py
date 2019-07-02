@@ -92,12 +92,12 @@ def get_random_crop(sample, patch_size):
 
 
 def random_gamma(sample):
-    maximum = 255
+    sample = normalise_sample(sample)
     gamma = random.uniform(0.4, 1.0)
     sample['colour'] = torch.pow(
-        sample['colour'].div_(maximum), gamma).mul_(maximum)
+        sample['colour'], gamma)
     sample['warped'] = torch.pow(
-        sample['warped'].div_(maximum), gamma).mul_(maximum)
+        sample['warped'], gamma)
     return sample
 
 
