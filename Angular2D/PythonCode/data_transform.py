@@ -92,7 +92,6 @@ def get_random_crop(sample, patch_size):
 
 
 def random_gamma(sample):
-    sample = normalise_sample(sample)
     gamma = random.uniform(0.4, 1.0)
     sample['colour'] = torch.pow(
         sample['colour'], gamma)

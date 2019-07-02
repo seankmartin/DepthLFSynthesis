@@ -40,7 +40,7 @@ def choose_cfg(choice):
         return setup_generic_cfg()
     elif choice == "tiny":
         return setup_tiny_cfg()
-    elif choice == "tinyhead"
+    elif choice == "tinyhead":
         return setup_small_head_cfg()
     else:
         print("Choice not found for cfg, using default")
@@ -60,7 +60,7 @@ def setup_small_head_cfg():
             "set_types" : ['train', 'unseen_vol', 'unseen_tf'],
             "num_samples": {'train': 1, 'unseen_vol': 1, 'unseen_tf': 1},
             "num_random_tfs": {'train': 1, 'unseen_vol': 1, 'unseen_tf': 1},
-            "hdf5_name": "head_set_new.h5",
+            "hdf5_name": "tiny_head.h5",
             "baseline": 0.01,
             "look_up": [0, 0, 1],
             "max_look_from": 1.2,

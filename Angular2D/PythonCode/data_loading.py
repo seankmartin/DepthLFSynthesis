@@ -17,7 +17,7 @@ class TrainFromHdf5(data.Dataset):
 
     def __init__(
             self, file_path, patch_size,
-            num_crops, transform=None, fixed_seed=False, sub_chan=False):
+            num_crops, transform=None, fixed_seed=False, sub_chan=False, crop_train=True):
         """
         Keyword arguments:
         hdf_file -- the location containing the hdf5 file
@@ -37,6 +37,7 @@ class TrainFromHdf5(data.Dataset):
         self.patch_size = patch_size
         self.num_crops = num_crops
         self.sub_chan = sub_chan
+        self.crop_train = crop_train
         if fixed_seed:
             random.seed(100)
         else:
@@ -62,7 +63,9 @@ class TrainFromHdf5(data.Dataset):
                 'warped': warped,
                 'grid_size': grid_size}
 
-            sample = data_transform.get_random_crop(sample, self.patch_size)
+            if self.crop_train:
+                sample = data_transform.get_random_crop(sample, self.patch_size)
+            sample = data_transform.normalise_sample(sample)
             sample = data_transform.random_gamma(sample)
 
             if self.sub_chan:
@@ -163,7 +166,8 @@ def create_dataloaders(args, config):
         patch_size=int(config['NETWORK']['patch_size']),
         num_crops=int(config['NETWORK']['num_crops']),
         transform=data_transform.angular_remap,
-        sub_chan=config["NETWORK"]["sub_chan"])
+        sub_chan=config["NETWORK"]["sub_chan"],
+        crop_train=config["NETWORK"]["crop_train"])
     batch_size = {'train': int(config['NETWORK']['batch_size'])}
     all_sets = [('train', train_set)]
     val_size = 1
