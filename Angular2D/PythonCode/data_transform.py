@@ -75,8 +75,8 @@ def crop(sample, crop_cords):
 
 def angular_remap(sample):
     shape = sample['colour'].shape
-    inputs = create_remap(sample['colour'], dtype=torch.float32)
-    targets = create_remap(sample['warped'], dtype=torch.float32)
+    inputs = create_remap(sample['warped'], dtype=torch.float32)
+    targets = create_remap(sample['colour'], dtype=torch.float32)
     return {'inputs': inputs, 'targets': targets, 'shape': shape}
 
 
