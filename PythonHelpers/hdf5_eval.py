@@ -16,8 +16,8 @@ def main(args):
         for i in range(args.n):
             psnr_accumulator = (0, 0, 0)
             ssim_accumulator = (0, 0, 0)
-            group1 = f["train"]["images"][i, :, :args.channels, ...]
-            group2 = f["train"]["warped"][i, :, :args.channels, ...]
+            group1 = f[args.group]["images"][i, :, :args.channels, ...]
+            group2 = f[args.group]["warped"][i, :, :args.channels, ...]
             for j in range(64):
                 im1 = group1[j]
                 im2 = group2[j]

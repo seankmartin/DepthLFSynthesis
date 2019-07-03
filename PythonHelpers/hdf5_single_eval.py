@@ -16,8 +16,8 @@ def main(args):
         i = args.n
         psnr_accumulator = (0, 0, 0)
         ssim_accumulator = (0, 0, 0)
-        group1 = f["train"]["images"][i, :, :args.channels, ...]
-        group2 = f["train"]["warped"][i, :, :args.channels, ...]
+        group1 = f[args.group]["images"][i, :, :args.channels, ...]
+        group2 = f[args.group]["warped"][i, :, :args.channels, ...]
         for j in range(64):
             im1_out_location = os.path.join(
                 args.out_loc, "{}/gt{}.png".format(i, j))
