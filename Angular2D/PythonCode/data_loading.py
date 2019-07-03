@@ -168,9 +168,9 @@ def create_dataloaders(args, config):
         transform=data_transform.angular_remap,
         sub_chan=config["NETWORK"]["sub_chan"],
         crop_train=config["NETWORK"]["crop_train"])
-    batch_size = {'train': int(config['NETWORK']['batch_size'])}
+    batch_size = {'train': int(config['NETWORK']['train_batch_size'])}
     all_sets = [('train', train_set)]
-    val_size = 1
+    val_size = int(config['NETWORK']['val_batch_size'])
     for tup in config["VALSETS"].items():
         name = tup[1]
         new_set = ValFromHdf5(
