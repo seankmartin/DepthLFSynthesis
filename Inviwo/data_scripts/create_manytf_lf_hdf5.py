@@ -214,8 +214,8 @@ def capture_lf_samples(hdf5_file, set_type, config, network, count):
     spatial_cols = config["spatial_cols"]
 
     colour = hdf5_file[set_type]
+    random_cams = []
     for _ in range(config["num_samples"][set_type]):
-        random_cams = []
         radii = (config["max_look_from"], config["min_look_from"])
         random_cam = create_random_camera(
                         radii,
